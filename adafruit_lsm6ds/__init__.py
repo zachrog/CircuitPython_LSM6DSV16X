@@ -171,6 +171,8 @@ _LSM6DS_FUNC_CFG_BANK_USER = const(0)
 _LSM6DS_FUNC_CFG_BANK_HUB = const(1)
 _LSM6DS_FUNC_CFG_BANK_EMBED = const(2)
 
+_LSM6DS_FIFO_STATUS1 = const(0x1B)
+_LSM6DS_FIFO_DATA_OUT_TAG = const(0x78)
 
 class LSM6DS:  # pylint: disable=too-many-instance-attributes
 
@@ -217,6 +219,10 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
     pedometer_steps = ROUnaryStruct(_LSM6DS_STEP_COUNTER, "<h")
     """The number of steps detected by the pedometer. You must enable with `pedometer_enable`
     before calling. Use ``pedometer_reset`` to reset the number of steps"""
+
+    _fifo_status = RWBit(_LSM6DS_FIFO_STATUS1, 6)
+    _fifo_data_out = RWBit(_LSM6DS_FIFO_DATA_OUT_TAG, 6)
+
     CHIP_ID = None
 
     def __init__(

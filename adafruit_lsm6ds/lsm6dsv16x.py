@@ -5,7 +5,11 @@
 This module provides the `adafruit_lsm6ds.LSM6DSV16X` subclass of LSM6DS sensors
 ==============================================================================
 """
-from . import LSM6DS, LSM6DS_DEFAULT_ADDRESS, LSM6DS_CHIP_ID
+import sys
+import os
+
+sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
+from __init__ import LSM6DS, LSM6DS_DEFAULT_ADDRESS, LSM6DSV16X_CHIP_ID
 
 try:
     import typing  # pylint: disable=unused-import
@@ -48,12 +52,25 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
 
     """
 
-    # CHIP_ID = LSM6DS_CHIP_ID
-    # CHIP_ID = 0x70
-    CHIP_ID = 0x6B
+    CHIP_ID = LSM6DSV16X_CHIP_ID
 
     def __init__(
-        self, i2c_bus: I2C, address: int = LSM6DS_DEFAULT_ADDRESS, ucf: str = None
+        self, 
+        i2c_bus: I2C, 
+        address: int = LSM6DS_DEFAULT_ADDRESS, 
+        ucf: str = None,
+        sensor_fusion: bool = True
     ) -> None:
+        
         super().__init__(i2c_bus, address, ucf)
         self._i3c_disable = True
+
+        if sensor_fusion:
+            _emb_func_en_a = (i2c_bus, 0x2)
+            _emb_func_en_b = (i2c_bus, 0x0)
+            self._set_embedded_functions(True, (_emb_func_en_a, _emb_func_en_b))
+
+    @property
+    def rot_vector(self):
+        print(self._fifo_status) 
+
