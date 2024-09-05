@@ -1,3 +1,5 @@
+
+
 # SPDX-FileCopyrightText: Copyright (c) 2020 Bryan Siepert for Adafruit Industries
 #
 # SPDX-License-Identifier: MIT
@@ -107,18 +109,18 @@ class Rate(CV):
 
 Rate.add_values(
     (
-        ("RATE_SHUTDOWN", 0, 0, None),
-        ("RATE_12_5_HZ", 1, 12.5, None),
-        ("RATE_26_HZ", 2, 26.0, None),
-        ("RATE_52_HZ", 3, 52.0, None),
-        ("RATE_104_HZ", 4, 104.0, None),
-        ("RATE_208_HZ", 5, 208.0, None),
-        ("RATE_416_HZ", 6, 416.0, None),
-        ("RATE_833_HZ", 7, 833.0, None),
-        ("RATE_1_66K_HZ", 8, 1666.0, None),
-        ("RATE_3_33K_HZ", 9, 3332.0, None),
-        ("RATE_6_66K_HZ", 10, 6664.0, None),
-        ("RATE_1_6_HZ", 11, 1.6, None),
+        ("RATE_SHUTDOWN", 0, 0.0, None),
+        ("RATE_1_8_HZ", 1, 1.875, None),
+        ("RATE_7_5_HZ", 2, 7.5, None),
+        ("RATE_15_HZ", 3, 15.0, None),
+        ("RATE_30_HZ", 4, 30.0, None),
+        ("RATE_60_HZ", 5, 60.0, None),
+        ("RATE_120_HZ", 6, 120.0, None),
+        ("RATE_240_HZ", 7, 240.0, None),
+        ("RATE_480_HZ", 8, 480.0, None),
+        ("RATE_1_92K_HZ", 9, 1920.0, None),
+        ("RATE_3_84K_HZ", 10, 3840.0, None),
+        ("RATE_7_68K_HZ", 11, 7680.0, None),
     )
 )
 
@@ -139,6 +141,7 @@ AccelHPF.add_values(
 LSM6DS_DEFAULT_ADDRESS = const(0x6A)
 
 LSM6DS_CHIP_ID = const(0x6C)
+LSM6DSV16X_CHIP_ID = const(0x70)
 
 _LSM6DS_MLC_INT1 = const(0x0D)
 _LSM6DS_WHOAMI = const(0xF)
@@ -235,11 +238,12 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
         self._bdu = True
 
         self._add_accel_ranges()
-        self.accelerometer_data_rate = Rate.RATE_104_HZ  # pylint: disable=no-member
-        self.gyro_data_rate = Rate.RATE_104_HZ  # pylint: disable=no-member
+        self.accelerometer_data_rate = Rate.RATE_120_HZ  # pylint: disable=no-member
+        self.gyro_data_rate = Rate.RATE_120_HZ  # pylint: disable=no-member
 
         self.accelerometer_range = AccelRange.RANGE_4G  # pylint: disable=no-member
         self.gyro_range = GyroRange.RANGE_250_DPS  # pylint: disable=no-member
+                
         # Load and configure MLC if UCF file is provided
         if ucf is not None:
             self.load_mlc(ucf)
@@ -254,11 +258,12 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
     def _add_gyro_ranges() -> None:
         GyroRange.add_values(
             (
-                ("RANGE_125_DPS", 125, 125, 4.375),
-                ("RANGE_250_DPS", 0, 250, 8.75),
-                ("RANGE_500_DPS", 1, 500, 17.50),
-                ("RANGE_1000_DPS", 2, 1000, 35.0),
-                ("RANGE_2000_DPS", 3, 2000, 70.0),
+                ("RANGE_125_DPS", 0, 125, 4.375),
+                ("RANGE_250_DPS", 1, 250, 8.75),
+                ("RANGE_500_DPS", 2, 500, 17.50),
+                ("RANGE_1000_DPS", 3, 1000, 35.0),
+                ("RANGE_2000_DPS", 4, 2000, 70.0),
+                ("RANGE_4000_DPS", 5, 4000, 140.0),
             )
         )
 
@@ -267,9 +272,9 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
         AccelRange.add_values(
             (
                 ("RANGE_2G", 0, 2, 0.061),
-                ("RANGE_16G", 1, 16, 0.488),
-                ("RANGE_4G", 2, 4, 0.122),
-                ("RANGE_8G", 3, 8, 0.244),
+                ("RANGE_4G", 1, 4, 0.122/2),
+                ("RANGE_8G", 2, 8, 0.244/4),
+                ("RANGE_16G", 3, 16, 0.488/8)
             )
         )
 
@@ -277,7 +282,7 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
     def acceleration(self) -> Tuple[float, float, float]:
         """The x, y, z acceleration values returned in a 3-tuple and are in m / s ^ 2."""
         raw_accel_data = self._raw_accel_data
-
+        print(raw_accel_data)
         x = self._scale_xl_data(raw_accel_data[0])
         y = self._scale_xl_data(raw_accel_data[1])
         z = self._scale_xl_data(raw_accel_data[2])
@@ -292,6 +297,7 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
         return (x, y, z)
 
     def _scale_xl_data(self, raw_measurement: int) -> float:
+        print(AccelRange.lsb[self._cached_accel_range])
         return (
             raw_measurement
             * AccelRange.lsb[self._cached_accel_range]
