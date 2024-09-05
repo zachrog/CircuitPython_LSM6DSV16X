@@ -49,7 +49,8 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     """
 
     # CHIP_ID = LSM6DS_CHIP_ID
-    CHIP_ID = 0x70
+    # CHIP_ID = 0x70
+    CHIP_ID = 0x6B
 
     def __init__(
         self, i2c_bus: I2C, address: int = LSM6DS_DEFAULT_ADDRESS, ucf: str = None
