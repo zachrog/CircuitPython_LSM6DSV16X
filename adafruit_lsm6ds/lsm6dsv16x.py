@@ -11,6 +11,7 @@ from adafruit_register.i2c_struct import ROUnaryStruct, Struct
 from adafruit_register.i2c_bits import RWBits, ROBits
 from adafruit_register.i2c_bit import RWBit, ROBit
 from micropython import const
+from dataclasses import dataclass
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 from __init__ import LSM6DS, CV, _LSM6DS_EMB_FUNC_INIT_A, LSM6DS_DEFAULT_ADDRESS, _LSM6DS_EMB_FUNC_EN_A
@@ -24,12 +25,23 @@ _LSM6DSV16X_FIFO_DATA_OUT_TAG = const(0x78)
 
 LSM6DSV16X_CHIP_ID = const(0x70)
 
+
 class SFLPRate(CV):
     """Options for ``accelerometer_data_rate`` and ``gyro_data_rate``"""
 
 
 class FIFOMode(CV):
     """Options for ``accelerometer_data_rate`` and ``gyro_data_rate``"""
+
+
+@dataclass
+class FIFOStatus:
+    samples: int
+    wtm: bool
+    ovr: bool
+    full: bool
+    bdr: bool
+    ovr_latch: bool
 
 
 SFLPRate.add_values(
@@ -101,10 +113,18 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     _sflp_batch = RWBit(_LSM6DSV16X_EMB_FUNC_FIFO_EN_A, 1)
     _fifo_mode = RWBits(3, _LSM6DSV16X_FIFO_CTRL4, 0)
     _sflp_init = RWBit(_LSM6DS_EMB_FUNC_INIT_A, 1)
-    _fifo_status1 = ROBits(8, _LSM6DSV16X_FIFO_STATUS1, 0)
+    _fifo_status1 = ROBits(8, _LSM6DSV16X_FIFO_STATUS1, 0, 2)
+
     _fifo_data_out_tag = ROBits(5, _LSM6DSV16X_FIFO_DATA_OUT_TAG, 3)
-    _fifo_data = ROBits(8, _LSM6DSV16X_FIFO_DATA_OUT_X_L, 0, 6)
+    _raw_sensor_fusion_data = Struct(_LSM6DSV16X_FIFO_DATA_OUT_X_L, "<hhh")
     _sflp_en = RWBit(_LSM6DS_EMB_FUNC_EN_A, 1)
+
+    SAMPLES_BITMASK = 0b0000000111111111
+    WTM_BITMASK = 0b1000000000000000
+    OVR_BITMASK = 0b0100000000000000
+    FULL_BITMASK = 0b0010000000000000
+    BDR_BITMASK = 0b0001000000000000
+    OVR_LATCHED_BITMASK = 0b0000100000000000
 
     def __init__(
             self,
@@ -113,14 +133,13 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
             ucf: str = None,
             sensor_fusion: bool = True
     ) -> None:
-        
         super().__init__(i2c_bus, address, ucf)
         self._i3c_disable = True
         if sensor_fusion:
             self._enable_sflp()
 
     def _enable_sflp(self):
-        self._mem_bank = 1 # Enable config reg for embedded funcs
+        self._mem_bank = 1  # Enable config reg for embedded funcs
         self._sflp_data_rate = SFLPRate.RATE_120_HZ  # Set rate
         self._sflp_batch = 1  # Set batching
         self._fifo_mode = FIFOMode.LSM6DSV16X_CONTINUOUS_MODE
@@ -130,9 +149,22 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
 
     @property
     def quaternion(self):
-        num_samples = self._fifo_status1
+        status = self._read_status()
+        num_samples = status.samples
+        raw_quat_data = self._raw_sensor_fusion_data    # Check tag to see if it is quat data!
         # print(num_samples)
         # for i in range(num_samples):
-        print("sample:",self._fifo_status1)
-        print("tag:",self._fifo_data_out_tag)
-        print("data:",self._fifo_data)
+        print("sample:", num_samples)
+        print("tag:", self._fifo_data_out_tag)
+        print("data:", raw_quat_data)
+
+
+    def _read_status(self):
+        raw_status = self._fifo_status1
+        samples = raw_status & self.SAMPLES_BITMASK
+        wtm = bool(raw_status & self.WTM_BITMASK)
+        ovr = bool(raw_status & self.OVR_BITMASK)
+        full = bool(raw_status & self.FULL_BITMASK)
+        bdr = bool(raw_status & self.BDR_BITMASK)
+        ovr_latch = bool(raw_status & self.OVR_LATCHED_BITMASK)
+        return FIFOStatus(samples, wtm, ovr, full, bdr, ovr_latch)
