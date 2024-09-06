@@ -1,11 +1,9 @@
-
-
 # SPDX-FileCopyrightText: Copyright (c) 2020 Bryan Siepert for Adafruit Industries
 #
 # SPDX-License-Identifier: MIT
 
 """
-`adafruit_lsm6ds`
+`adafruit_LSM6DS`
 ================================================================================
 
 CircuitPython helper library for the LSM6DS family of motion sensors from ST
@@ -107,6 +105,9 @@ class Rate(CV):
     """Options for ``accelerometer_data_rate`` and ``gyro_data_rate``"""
 
 
+
+
+
 Rate.add_values(
     (
         ("RATE_SHUTDOWN", 0, 0.0, None),
@@ -125,6 +126,8 @@ Rate.add_values(
 )
 
 
+
+
 class AccelHPF(CV):
     """Options for the accelerometer high pass filter"""
 
@@ -138,9 +141,7 @@ AccelHPF.add_values(
     )
 )
 
-LSM6DS_DEFAULT_ADDRESS = const(0x6A)
-
-LSM6DS_CHIP_ID = const(0x6C)
+LSM6DSV16X_DEFAULT_ADDRESS = const(0x6A)
 LSM6DSV16X_CHIP_ID = const(0x70)
 
 _LSM6DS_MLC_INT1 = const(0x0D)
@@ -164,7 +165,10 @@ _MILLI_G_TO_ACCEL = 0.00980665
 _TEMPERATURE_SENSITIVITY = 256
 _TEMPERATURE_OFFSET = 25.0
 
+
 _LSM6DS_EMB_FUNC_EN_A = const(0x04)
+_LSM6DS_EMB_FUNC_INIT_A = const(0x66)
+
 _LSM6DS_EMB_FUNC_EN_B = const(0x05)
 _LSM6DS_FUNC_CFG_ACCESS = const(0x01)
 _LSM6DS_FUNC_CFG_BANK_USER = const(0)
@@ -173,6 +177,8 @@ _LSM6DS_FUNC_CFG_BANK_EMBED = const(2)
 
 _LSM6DS_FIFO_STATUS1 = const(0x1B)
 _LSM6DS_FIFO_DATA_OUT_TAG = const(0x78)
+
+
 
 class LSM6DS:  # pylint: disable=too-many-instance-attributes
 
@@ -226,7 +232,7 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
     CHIP_ID = None
 
     def __init__(
-        self, i2c_bus: I2C, address: int = LSM6DS_DEFAULT_ADDRESS, ucf: str = None
+            self, i2c_bus: I2C, address: int = LSM6DS_DEFAULT_ADDRESS, ucf: str = None
     ) -> None:
         self._cached_accel_range = None
         self._cached_gyro_range = None
@@ -249,7 +255,7 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
 
         self.accelerometer_range = AccelRange.RANGE_4G  # pylint: disable=no-member
         self.gyro_range = GyroRange.RANGE_250_DPS  # pylint: disable=no-member
-                
+
         # Load and configure MLC if UCF file is provided
         if ucf is not None:
             self.load_mlc(ucf)
@@ -259,6 +265,8 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
         self._sw_reset = True
         while self._sw_reset:
             sleep(0.001)
+
+
 
     @staticmethod
     def _add_gyro_ranges() -> None:
@@ -278,9 +286,9 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
         AccelRange.add_values(
             (
                 ("RANGE_2G", 0, 2, 0.061),
-                ("RANGE_4G", 1, 4, 0.122/2),
-                ("RANGE_8G", 2, 8, 0.244/4),
-                ("RANGE_16G", 3, 16, 0.488/8)
+                ("RANGE_4G", 1, 4, 0.12 / 2),
+                ("RANGE_8G", 2, 8, 0.24 / 4),
+                ("RANGE_16G", 3, 16, 0.48 / 8)
             )
         )
 
@@ -305,9 +313,9 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
     def _scale_xl_data(self, raw_measurement: int) -> float:
         print(AccelRange.lsb[self._cached_accel_range])
         return (
-            raw_measurement
-            * AccelRange.lsb[self._cached_accel_range]
-            * _MILLI_G_TO_ACCEL
+                raw_measurement
+                * AccelRange.lsb[self._cached_accel_range]
+                * _MILLI_G_TO_ACCEL
         )
 
     def _scale_gyro_data(self, raw_measurement: int) -> float:
@@ -472,3 +480,5 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
             buf = self._mlc0_src
             self._mem_bank = 0
         return buf
+if __name__ == "__main__":
+    print(FIFOMode.LSM6DS_BYPASS_MODE)
