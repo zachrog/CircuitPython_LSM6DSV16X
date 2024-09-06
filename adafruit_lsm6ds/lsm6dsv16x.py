@@ -13,7 +13,7 @@ from adafruit_register.i2c_bit import RWBit, ROBit
 from micropython import const
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-from __init__ import LSM6DS, LSM6DSV16X_DEFAULT_ADDRESS, LSM6DSV16X_CHIP_ID, CV, _LSM6DS_EMB_FUNC_INIT_A
+from __init__ import LSM6DS, CV, _LSM6DS_EMB_FUNC_INIT_A, LSM6DS_DEFAULT_ADDRESS, _LSM6DS_EMB_FUNC_EN_A
 
 _LSM6DSV16X_SFLP_ODR = const(0x5E)
 _LSM6DSV16X_EMB_FUNC_FIFO_EN_A = const(0x44)
@@ -22,6 +22,7 @@ _LSM6DSV16X_FIFO_STATUS1 = const(0x1B)
 _LSM6DSV16X_FIFO_DATA_OUT_X_L = const(0x79)
 _LSM6DSV16X_FIFO_DATA_OUT_TAG = const(0x78)
 
+LSM6DSV16X_CHIP_ID = const(0x70)
 
 class SFLPRate(CV):
     """Options for ``accelerometer_data_rate`` and ``gyro_data_rate``"""
@@ -100,31 +101,38 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     _sflp_batch = RWBit(_LSM6DSV16X_EMB_FUNC_FIFO_EN_A, 1)
     _fifo_mode = RWBits(3, _LSM6DSV16X_FIFO_CTRL4, 0)
     _sflp_init = RWBit(_LSM6DS_EMB_FUNC_INIT_A, 1)
-    _fifo_status1 = ROBits(8, _LSM6DSV16X_FIFO_CTRL4, 0)
-    _fifo_data_out_tag = ROBits(5, _LSM6DSV16X_FIFO_CTRL4, 3)
+    _fifo_status1 = ROBits(8, _LSM6DSV16X_FIFO_STATUS1, 0)
+    _fifo_data_out_tag = ROBits(5, _LSM6DSV16X_FIFO_DATA_OUT_TAG, 3)
     _fifo_data = ROBits(8, _LSM6DSV16X_FIFO_DATA_OUT_X_L, 0, 6)
+    _sflp_en = RWBit(_LSM6DS_EMB_FUNC_EN_A, 1)
 
     def __init__(
             self,
             i2c_bus: I2C,
-            address: int = LSM6DSV16X_DEFAULT_ADDRESS,
+            address: int = LSM6DS_DEFAULT_ADDRESS,
             ucf: str = None,
             sensor_fusion: bool = True
     ) -> None:
+        
         super().__init__(i2c_bus, address, ucf)
         self._i3c_disable = True
         if sensor_fusion:
             self._enable_sflp()
 
     def _enable_sflp(self):
-        self._set_embedded_functions(enable=True)  # Enable config reg for embedded funcs
+        self._mem_bank = 1 # Enable config reg for embedded funcs
         self._sflp_data_rate = SFLPRate.RATE_120_HZ  # Set rate
-        self._sflp_batch = True  # Set batching
+        self._sflp_batch = 1  # Set batching
         self._fifo_mode = FIFOMode.LSM6DSV16X_CONTINUOUS_MODE
-        self._sflp_init = True
+        self._sflp_en = 1
+        # self._sflp_init = 1
+        self._mem_bank = 0
 
     @property
     def quaternion(self):
         num_samples = self._fifo_status1
-        for i in range(num_samples):
-            print(self._fifo_data_out_tag)
+        # print(num_samples)
+        # for i in range(num_samples):
+        print("sample:",self._fifo_status1)
+        print("tag:",self._fifo_data_out_tag)
+        print("data:",self._fifo_data)

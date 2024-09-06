@@ -141,14 +141,15 @@ AccelHPF.add_values(
     )
 )
 
-LSM6DSV16X_DEFAULT_ADDRESS = const(0x6A)
-LSM6DSV16X_CHIP_ID = const(0x70)
+LSM6DS_DEFAULT_ADDRESS = const(0x6A)
+LSM6DS_CHIP_ID = const(0x6C)
 
 _LSM6DS_MLC_INT1 = const(0x0D)
 _LSM6DS_WHOAMI = const(0xF)
 _LSM6DS_CTRL1_XL = const(0x10)
 _LSM6DS_CTRL2_G = const(0x11)
 _LSM6DS_CTRL3_C = const(0x12)
+_LSM6DS_CTRL6_G = const(0x15)
 _LSM6DS_CTRL8_XL = const(0x17)
 _LSM6DS_CTRL9_XL = const(0x18)
 _LSM6DS_CTRL10_C = const(0x19)
@@ -175,11 +176,6 @@ _LSM6DS_FUNC_CFG_BANK_USER = const(0)
 _LSM6DS_FUNC_CFG_BANK_HUB = const(1)
 _LSM6DS_FUNC_CFG_BANK_EMBED = const(2)
 
-_LSM6DS_FIFO_STATUS1 = const(0x1B)
-_LSM6DS_FIFO_DATA_OUT_TAG = const(0x78)
-
-
-
 class LSM6DS:  # pylint: disable=too-many-instance-attributes
 
     """Driver for the LSM6DSOX 6-axis accelerometer and gyroscope.
@@ -199,18 +195,19 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
     _emb_func_en_a = Struct(_LSM6DS_EMB_FUNC_EN_A, "<b")
     _emb_func_en_b = Struct(_LSM6DS_EMB_FUNC_EN_B, "<b")
     _mlc0_src = Struct(_LSM6DS_MLC0_SRC, "<bbbbbbbb")
-    # RWBits:
-    _accel_range = RWBits(2, _LSM6DS_CTRL1_XL, 2)
-    _accel_data_rate = RWBits(4, _LSM6DS_CTRL1_XL, 4)
 
-    _gyro_data_rate = RWBits(4, _LSM6DS_CTRL2_G, 4)
-    _gyro_range = RWBits(2, _LSM6DS_CTRL2_G, 2)
-    _gyro_range_125dps = RWBit(_LSM6DS_CTRL2_G, 1)
+    # RWBits:
+    _accel_range = RWBits(2, _LSM6DS_CTRL8_XL, 0)
+    _accel_data_rate = RWBits(4, _LSM6DS_CTRL1_XL, 0)
+
+    _gyro_data_rate = RWBits(4, _LSM6DS_CTRL2_G, 0)
+    _gyro_range = RWBits(4, _LSM6DS_CTRL6_G, 0)
+    # _gyro_range_125dps = RWBit(_LSM6DS_CTRL2_G, 1)
 
     _sw_reset = RWBit(_LSM6DS_CTRL3_C, 0)
     _bdu = RWBit(_LSM6DS_CTRL3_C, 6)
 
-    _high_pass_filter = RWBits(2, _LSM6DS_CTRL8_XL, 5)
+    _high_pass_filter = RWBits(3, _LSM6DS_CTRL8_XL, 5)
     _i3c_disable = RWBit(_LSM6DS_CTRL9_XL, 1)
     _pedometer_reset = RWBit(_LSM6DS_CTRL10_C, 1)
     _func_enable = RWBit(_LSM6DS_CTRL10_C, 2)
@@ -225,9 +222,6 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
     pedometer_steps = ROUnaryStruct(_LSM6DS_STEP_COUNTER, "<h")
     """The number of steps detected by the pedometer. You must enable with `pedometer_enable`
     before calling. Use ``pedometer_reset`` to reset the number of steps"""
-
-    _fifo_status = RWBit(_LSM6DS_FIFO_STATUS1, 6)
-    _fifo_data_out = RWBit(_LSM6DS_FIFO_DATA_OUT_TAG, 6)
 
     CHIP_ID = None
 
@@ -286,9 +280,9 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
         AccelRange.add_values(
             (
                 ("RANGE_2G", 0, 2, 0.061),
-                ("RANGE_4G", 1, 4, 0.12 / 2),
-                ("RANGE_8G", 2, 8, 0.24 / 4),
-                ("RANGE_16G", 3, 16, 0.48 / 8)
+                ("RANGE_4G", 1, 4, 0.12),
+                ("RANGE_8G", 2, 8, 0.24),
+                ("RANGE_16G", 3, 16, 0.48)
             )
         )
 
@@ -296,7 +290,6 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
     def acceleration(self) -> Tuple[float, float, float]:
         """The x, y, z acceleration values returned in a 3-tuple and are in m / s ^ 2."""
         raw_accel_data = self._raw_accel_data
-        print(raw_accel_data)
         x = self._scale_xl_data(raw_accel_data[0])
         y = self._scale_xl_data(raw_accel_data[1])
         z = self._scale_xl_data(raw_accel_data[2])
@@ -311,7 +304,6 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
         return (x, y, z)
 
     def _scale_xl_data(self, raw_measurement: int) -> float:
-        print(AccelRange.lsb[self._cached_accel_range])
         return (
                 raw_measurement
                 * AccelRange.lsb[self._cached_accel_range]
@@ -480,5 +472,4 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
             buf = self._mlc0_src
             self._mem_bank = 0
         return buf
-if __name__ == "__main__":
-    print(FIFOMode.LSM6DS_BYPASS_MODE)
+    
