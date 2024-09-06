@@ -7,9 +7,52 @@ This module provides the `adafruit_lsm6ds.LSM6DSV16X` subclass of LSM6DS sensors
 """
 import sys
 import os
+from adafruit_register.i2c_struct import ROUnaryStruct, Struct
+from adafruit_register.i2c_bits import RWBits, ROBits
+from adafruit_register.i2c_bit import RWBit, ROBit
+from micropython import const
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
-from __init__ import LSM6DS, LSM6DS_DEFAULT_ADDRESS, LSM6DSV16X_CHIP_ID
+from __init__ import LSM6DS, LSM6DSV16X_DEFAULT_ADDRESS, LSM6DSV16X_CHIP_ID, CV, _LSM6DS_EMB_FUNC_INIT_A
+
+_LSM6DSV16X_SFLP_ODR = const(0x5E)
+_LSM6DSV16X_EMB_FUNC_FIFO_EN_A = const(0x44)
+_LSM6DSV16X_FIFO_CTRL4 = const(0x0A)
+_LSM6DSV16X_FIFO_STATUS1 = const(0x1B)
+_LSM6DSV16X_FIFO_DATA_OUT_X_L = const(0x79)
+_LSM6DSV16X_FIFO_DATA_OUT_TAG = const(0x78)
+
+
+class SFLPRate(CV):
+    """Options for ``accelerometer_data_rate`` and ``gyro_data_rate``"""
+
+
+class FIFOMode(CV):
+    """Options for ``accelerometer_data_rate`` and ``gyro_data_rate``"""
+
+
+SFLPRate.add_values(
+    (
+        ("RATE_15_HZ", 0, 15.0, None),
+        ("RATE_30_HZ", 1, 30.0, None),
+        ("RATE_60_HZ", 2, 60.0, None),
+        ("RATE_120_HZ", 3, 120.0, None),
+        ("RATE_240_HZ", 4, 240.0, None),
+        ("RATE_480_HZ", 5, 480.0, None),
+    )
+)
+
+FIFOMode.add_values(
+    (
+        ("LSM6DSV16X_BYPASS_MODE", 0, 0, None),
+        ("LSM6DSV16X_FIFO_MODE", 1, 21, None),
+        ("LSM6DSV16X_CONTINUOUS_WTM_TO_FULL_MODE", 2, 2, None),
+        ("LSM6DSV16X_CONTINUOUS_TO_FIFO_MODE", 3, 3, None),
+        ("LSM6DSV16X_BYPASS_TO_CONTINUOUS_MODE", 4, 4, None),
+        ("LSM6DSV16X_CONTINUOUS_MODE", 5, 5, None),
+        ("LSM6DSV16X_BYPASS_TO_FIFO_MODE", 6, 6, None),
+    )
+)
 
 try:
     import typing  # pylint: disable=unused-import
@@ -53,24 +96,35 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     """
 
     CHIP_ID = LSM6DSV16X_CHIP_ID
+    _sflp_data_rate = RWBits(3, _LSM6DSV16X_SFLP_ODR, 3)
+    _sflp_batch = RWBit(_LSM6DSV16X_EMB_FUNC_FIFO_EN_A, 1)
+    _fifo_mode = RWBits(3, _LSM6DSV16X_FIFO_CTRL4, 0)
+    _sflp_init = RWBit(_LSM6DS_EMB_FUNC_INIT_A, 1)
+    _fifo_status1 = ROBits(8, _LSM6DSV16X_FIFO_CTRL4, 0)
+    _fifo_data_out_tag = ROBits(5, _LSM6DSV16X_FIFO_CTRL4, 3)
+    _fifo_data = ROBits(8, _LSM6DSV16X_FIFO_DATA_OUT_X_L, 0, 6)
 
     def __init__(
-        self, 
-        i2c_bus: I2C, 
-        address: int = LSM6DS_DEFAULT_ADDRESS, 
-        ucf: str = None,
-        sensor_fusion: bool = True
+            self,
+            i2c_bus: I2C,
+            address: int = LSM6DSV16X_DEFAULT_ADDRESS,
+            ucf: str = None,
+            sensor_fusion: bool = True
     ) -> None:
-        
         super().__init__(i2c_bus, address, ucf)
         self._i3c_disable = True
-
         if sensor_fusion:
-            _emb_func_en_a = (i2c_bus, 0x2)
-            _emb_func_en_b = (i2c_bus, 0x0)
-            self._set_embedded_functions(True, (_emb_func_en_a, _emb_func_en_b))
+            self._enable_sflp()
+
+    def _enable_sflp(self):
+        self._set_embedded_functions(enable=True)  # Enable config reg for embedded funcs
+        self._sflp_data_rate = SFLPRate.RATE_120_HZ  # Set rate
+        self._sflp_batch = True  # Set batching
+        self._fifo_mode = FIFOMode.LSM6DSV16X_CONTINUOUS_MODE
+        self._sflp_init = True
 
     @property
-    def rot_vector(self):
-        print(self._fifo_status) 
-
+    def quaternion(self):
+        num_samples = self._fifo_status1
+        for i in range(num_samples):
+            print(self._fifo_data_out_tag)
