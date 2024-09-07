@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2020 Bryan Siepert for Adafruit Industries
-#
+# Modified for Dingo V2
 # SPDX-License-Identifier: MIT
 
 """
@@ -202,7 +202,7 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
 
     _gyro_data_rate = RWBits(4, _LSM6DS_CTRL2_G, 0)
     _gyro_range = RWBits(4, _LSM6DS_CTRL6_G, 0)
-    # _gyro_range_125dps = RWBit(_LSM6DS_CTRL2_G, 1)
+    _gyro_range_125dps = RWBit(_LSM6DS_CTRL2_G, 1)
 
     _sw_reset = RWBit(_LSM6DS_CTRL3_C, 0)
     _bdu = RWBit(_LSM6DS_CTRL3_C, 6)
@@ -226,8 +226,12 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
     CHIP_ID = None
 
     def __init__(
-            self, i2c_bus: I2C, address: int = LSM6DS_DEFAULT_ADDRESS, ucf: str = None
+            self, 
+            i2c_bus: I2C, 
+            address: int = LSM6DS_DEFAULT_ADDRESS, 
+            ucf: str = None
     ) -> None:
+        
         self._cached_accel_range = None
         self._cached_gyro_range = None
 
@@ -248,7 +252,11 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
         self.gyro_data_rate = Rate.RATE_120_HZ  # pylint: disable=no-member
 
         self.accelerometer_range = AccelRange.RANGE_4G  # pylint: disable=no-member
-        self.gyro_range = GyroRange.RANGE_250_DPS  # pylint: disable=no-member
+        self.gyro_range = GyroRange.RANGE_2000_DPS  # pylint: disable=no-member
+        
+        # print("Setting Gyro")
+        # self._gyro_data_rate.__set__(value=GyroRange.RANGE_2000_DPS)
+        # print("Set Gyro")
 
         # Load and configure MLC if UCF file is provided
         if ucf is not None:

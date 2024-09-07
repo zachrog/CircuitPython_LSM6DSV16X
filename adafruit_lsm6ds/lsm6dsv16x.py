@@ -1,5 +1,5 @@
 # SPDX-FileCopyrightText: Copyright (c) 2020 Bryan Siepert for Adafruit Industries
-# Modified by Cian Rodriguez for Dingo V2
+# Modified by for Dingo V2
 # SPDX-License-Identifier: MIT
 """
 This module provides the `adafruit_lsm6ds.LSM6DSV16X` subclass of LSM6DS sensors
@@ -58,12 +58,12 @@ SFLPRate.add_values(
 FIFOMode.add_values(
     (
         ("LSM6DSV16X_BYPASS_MODE", 0, 0, None),
-        ("LSM6DSV16X_FIFO_MODE", 1, 21, None),
+        ("LSM6DSV16X_FIFO_MODE", 1, 1, None),
         ("LSM6DSV16X_CONTINUOUS_WTM_TO_FULL_MODE", 2, 2, None),
         ("LSM6DSV16X_CONTINUOUS_TO_FIFO_MODE", 3, 3, None),
         ("LSM6DSV16X_BYPASS_TO_CONTINUOUS_MODE", 4, 4, None),
-        ("LSM6DSV16X_CONTINUOUS_MODE", 5, 5, None),
-        ("LSM6DSV16X_BYPASS_TO_FIFO_MODE", 6, 6, None),
+        ("LSM6DSV16X_CONTINUOUS_MODE", 6, 6, None), # skip 5 (reserved)
+        ("LSM6DSV16X_BYPASS_TO_FIFO_MODE", 7, 7, None),
     )
 )
 
@@ -118,6 +118,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     _fifo_data_out_tag = ROBits(5, _LSM6DSV16X_FIFO_DATA_OUT_TAG, 3)
     _raw_sensor_fusion_data = Struct(_LSM6DSV16X_FIFO_DATA_OUT_X_L, "<hhh")
     _sflp_en = RWBit(_LSM6DS_EMB_FUNC_EN_A, 1)
+    print(type(_sflp_en))
 
     SAMPLES_BITMASK = 0b0000000111111111
     WTM_BITMASK = 0b1000000000000000
@@ -135,25 +136,35 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     ) -> None:
         super().__init__(i2c_bus, address, ucf)
         self._i3c_disable = True
+        print(type(self._sflp_en))
         if sensor_fusion:
             self._enable_sflp()
 
+    def _print_and_set(self, reg, value, human_name = None):
+        # print(type(reg))
+        if human_name is not None:
+            print(human_name + "\t", end='')
+        print(f"ORIGINAL: {reg}\t", end='')
+        reg = value
+        print(f"UPDATED: {reg}")
+
     def _enable_sflp(self):
-        self._mem_bank = 1  # Enable config reg for embedded funcs
-        self._sflp_data_rate = SFLPRate.RATE_120_HZ  # Set rate
-        self._sflp_batch = 1  # Set batching
-        self._fifo_mode = FIFOMode.LSM6DSV16X_CONTINUOUS_MODE
-        self._sflp_en = 1
-        # self._sflp_init = 1
-        self._mem_bank = 0
+        print("setting membank")
+        self.mem_bank =  1
+        print("set membank")
+        # self._print_and_set(self._mem_bank, 1, "mem_bank")  # Enable config reg for embedded funcs 
+        # self._print_and_set(self._sflp_data_rate, SFLPRate.RATE_120_HZ, "sflp_data_rate")  # Set rate 0x5e
+        # self._print_and_set(self._sflp_batch, 1, "sflp_batch")  # Set batching 0x44
+        # self._print_and_set(self._fifo_mode, FIFOMode.LSM6DSV16X_CONTINUOUS_MODE, "fifo_mode")  # 
+        # self._print_and_set(self._sflp_en, 1, "sflp_enable") # 0x04
+        # self._print_and_set(self._sflp_init, 1, "sflp_init") # 0x0a
+        # self._print_and_set(self._mem_bank, 0, "mem_bank")
 
     @property
     def quaternion(self):
         status = self._read_status()
         num_samples = status.samples
         raw_quat_data = self._raw_sensor_fusion_data    # Check tag to see if it is quat data!
-        # print(num_samples)
-        # for i in range(num_samples):
         print("sample:", num_samples)
         print("tag:", self._fifo_data_out_tag)
         print("data:", raw_quat_data)
@@ -161,6 +172,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
 
     def _read_status(self):
         raw_status = self._fifo_status1
+        print(raw_status)
         samples = raw_status & self.SAMPLES_BITMASK
         wtm = bool(raw_status & self.WTM_BITMASK)
         ovr = bool(raw_status & self.OVR_BITMASK)
@@ -168,3 +180,21 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
         bdr = bool(raw_status & self.BDR_BITMASK)
         ovr_latch = bool(raw_status & self.OVR_LATCHED_BITMASK)
         return FIFOStatus(samples, wtm, ovr, full, bdr, ovr_latch)
+    
+    @property
+    def mem_bank(self) -> int:
+        return self._mem_bank
+    
+    @mem_bank.setter
+    def mem_bank(self, value: int) -> None:
+        self._mem_bank = value
+        
+    @property
+    def sflp_data_rate(self) -> int:
+        return self.slfp_data_rate
+    
+    @sflp_data_rate.setter
+    def sflp_data_rate(self, value: int) -> None:
+        self._sflp_data_rate = value
+
+    
