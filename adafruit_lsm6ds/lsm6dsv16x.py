@@ -147,35 +147,32 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
             self._enable_sflp()
         self._print_regs()
         
-        
-
 
     def _enable_sflp(self):
         print()
-        self.sflp_data_rate = SFLPRate.RATE_120_HZ             # Set rate 0x5e
+        self.sflp_data_rate = SFLPRate.RATE_480_HZ             # Set rate 0x5e
         self.sflp_batch = 1                                    # Set batching 0x44
         self.fifo_mode = FIFOMode.LSM6DSV16X_CONTINUOUS_MODE
-        self.fifo_watermark = 500
         self.sflp_en = 1
-        time.sleep(1)
-        
-        
-        
-        
+
 
     @property
     def quaternion(self):
         status = self._read_status()
         num_samples = status.samples
-        raw_quat_data = self.raw_sensor_fusion_data    # Check tag to see if it is quat data!
-        print("sample:", num_samples)
-        print("tag:", hex(self.fifo_data_out_tag))
-        print("data:", raw_quat_data)
+        if num_samples > 0:
+            while True:
+                # Grab data from FIFO, this also pops it.
+                tag = self.fifo_data_out_tag
+                data = self.raw_sensor_fusion_data
+                if tag== 0x13:  # Check for quaternion tag
+                    return data
+            
+        return None 
 
 
     def _read_status(self):
         raw_status = self.fifo_status1
-        print(f"raw_status: ", bin(raw_status))
         samples = raw_status & self.SAMPLES_BITMASK
         wtm = bool(raw_status & self.WTM_BITMASK)
         ovr = bool(raw_status & self.OVR_BITMASK)
@@ -186,6 +183,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     
 
     def _print_regs(self):
+        print("Current registers:")
         self.mem_bank = 1
         print(f"data_rate: {bin(self.sflp_data_rate)}")
         print(f"batch: {bin(self.sflp_batch)}")
@@ -193,26 +191,30 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
         print(f"sflp en: {bin(self.sflp_en)}")
         print(f"sflp init: {bin(self.sflp_init)}")
         print(f"fifo watermark: {bin(self.fifo_watermark)}")
-        
         self.mem_bank = 0
+
         print(f"acc batch: {bin(self.acc_batch)}")
         print(f"gyro range: {bin(self.gyro_range)}")
         print(f"gyro rate: {bin(self.gyro_data_rate)}")
         print(f"acc range: {bin(self.accelerometer_range)}")
         print(f"acc rate: {bin(self.accelerometer_data_rate)}")
+        print("=================================")
         
 
     @property
     def mem_bank(self) -> int:
         return self._mem_bank
 
+
     @mem_bank.setter
     def mem_bank(self, value: int) -> None:
         self._mem_bank = value
 
+
     @property
     def sflp_data_rate(self) -> int:
         return self._sflp_data_rate
+
 
     @sflp_data_rate.setter
     def sflp_data_rate(self, value: int) -> None:
@@ -220,9 +222,11 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
         self._sflp_data_rate = value
         self.mem_bank = 0
 
+
     @property
     def sflp_batch(self) -> bool:
         return self._sflp_batch
+
 
     @sflp_batch.setter
     def sflp_batch(self, value: bool) -> None:
@@ -230,17 +234,21 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
         self._sflp_batch = value
         self.mem_bank = 0
 
+
     @property
     def fifo_mode(self) -> int:
         return self._fifo_mode
+
 
     @fifo_mode.setter
     def fifo_mode(self, value: int) -> None:
         self._fifo_mode = value
 
+
     @property
     def sflp_init(self) -> bool:
         return self._sflp_init
+
 
     @sflp_init.setter
     def sflp_init(self, value: bool) -> None:
@@ -253,21 +261,26 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     def fifo_status1(self) -> int:
         return self._fifo_status1
 
+
     @property
     def fifo_data_out_tag(self) -> int:
         return self._fifo_data_out_tag
+
 
     @property
     def raw_sensor_fusion_data(self) -> tuple:
         return self._raw_sensor_fusion_data
 
+
     @raw_sensor_fusion_data.setter
     def raw_sensor_fusion_data(self, value: tuple) -> None:
         self._raw_sensor_fusion_data = value
 
+
     @property
     def sflp_en(self) -> bool:
         return self._sflp_en
+
 
     @sflp_en.setter
     def sflp_en(self, value: bool) -> None:
@@ -275,17 +288,21 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
         self._sflp_en = value
         self.mem_bank = 0
 
+
     @property
     def fifo_watermark(self) -> bool:
         return self._fifo_watermark
+
 
     @fifo_watermark.setter
     def fifo_watermark(self, value: int) -> None:
         self._fifo_watermark = value
     
+
     @property
     def acc_batch(self) -> int:
         return self._acc_batch
+
 
     @acc_batch.setter
     def acc_batch(self, value: int) -> None:
