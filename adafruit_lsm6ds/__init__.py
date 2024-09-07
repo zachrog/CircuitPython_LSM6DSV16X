@@ -1,4 +1,4 @@
-# SPDX-FileCopyrightText: Copyright (c) 2020 Bryan Siepert for Adafruit Industries
+3# SPDX-FileCopyrightText: Copyright (c) 2020 Bryan Siepert for Adafruit Industries
 # Modified for Dingo V2
 # SPDX-License-Identifier: MIT
 
@@ -151,9 +151,7 @@ _LSM6DS_CTRL2_G = const(0x11)
 _LSM6DS_CTRL3_C = const(0x12)
 _LSM6DS_CTRL6_G = const(0x15)
 _LSM6DS_CTRL8_XL = const(0x17)
-_LSM6DS_CTRL9_XL = const(0x18)
 _LSM6DS_CTRL10_C = const(0x19)
-_LSM6DS_ALL_INT_SRC = const(0x1A)
 _LSM6DS_OUT_TEMP_L = const(0x20)
 _LSM6DS_OUTX_L_G = const(0x22)
 _LSM6DS_OUTX_L_A = const(0x28)
@@ -192,9 +190,9 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
     _raw_accel_data = Struct(_LSM6DS_OUTX_L_A, "<hhh")
     _raw_gyro_data = Struct(_LSM6DS_OUTX_L_G, "<hhh")
     _raw_temp_data = Struct(_LSM6DS_OUT_TEMP_L, "<h")
-    _emb_func_en_a = Struct(_LSM6DS_EMB_FUNC_EN_A, "<b")
-    _emb_func_en_b = Struct(_LSM6DS_EMB_FUNC_EN_B, "<b")
-    _mlc0_src = Struct(_LSM6DS_MLC0_SRC, "<bbbbbbbb")
+    # _emb_func_en_a = Struct(_LSM6DS_EMB_FUNC_EN_A, "<b")
+    # _emb_func_en_b = Struct(_LSM6DS_EMB_FUNC_EN_B, "<b")
+    # _mlc0_src = Struct(_LSM6DS_MLC0_SRC, "<bbbbbbbb")
 
     # RWBits:
     _accel_range = RWBits(2, _LSM6DS_CTRL8_XL, 0)
@@ -202,24 +200,22 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
 
     _gyro_data_rate = RWBits(4, _LSM6DS_CTRL2_G, 0)
     _gyro_range = RWBits(4, _LSM6DS_CTRL6_G, 0)
-    _gyro_range_125dps = RWBit(_LSM6DS_CTRL2_G, 1)
+    # _gyro_range_125dps = RWBit(_LSM6DS_CTRL2_G, 1)
 
     _sw_reset = RWBit(_LSM6DS_CTRL3_C, 0)
     _bdu = RWBit(_LSM6DS_CTRL3_C, 6)
+    _boot = RWBit(_LSM6DS_CTRL3_C, 7)
 
-    _high_pass_filter = RWBits(3, _LSM6DS_CTRL8_XL, 5)
-    _i3c_disable = RWBit(_LSM6DS_CTRL9_XL, 1)
-    _pedometer_reset = RWBit(_LSM6DS_CTRL10_C, 1)
-    _func_enable = RWBit(_LSM6DS_CTRL10_C, 2)
+    # _high_pass_filter = RWBits(3, _LSM6DS_CTRL8_XL, 5)
+    # _pedometer_reset = RWBit(_LSM6DS_CTRL10_C, 1)
+    # _func_enable = RWBit(_LSM6DS_CTRL10_C, 2)
     _mem_bank = RWBit(_LSM6DS_FUNC_CFG_ACCESS, 7)
-    _mlc_status = ROBit(_LSM6DS_MLC_STATUS, 0)
-    _i3c_disable = RWBit(_LSM6DS_CTRL9_XL, 0)
-    _block_data_enable = RWBit(_LSM6DS_CTRL3_C, 4)
-    _route_int1 = RWBit(_LSM6DS_MLC_INT1, 0)
-    _tap_latch = RWBit(_LSM6DS_TAP_CFG0, 0)
-    _tap_clear = RWBit(_LSM6DS_TAP_CFG0, 6)
-    _ped_enable = RWBit(_LSM6DS_TAP_CFG, 6)
-    pedometer_steps = ROUnaryStruct(_LSM6DS_STEP_COUNTER, "<h")
+    # _mlc_status = ROBit(_LSM6DS_MLC_STATUS, 0)
+    # _route_int1 = RWBit(_LSM6DS_MLC_INT1, 0)
+    # _tap_latch = RWBit(_LSM6DS_TAP_CFG0, 0)
+    # _tap_clear = RWBit(_LSM6DS_TAP_CFG0, 6)
+    # _ped_enable = RWBit(_LSM6DS_TAP_CFG, 6)
+    # pedometer_steps = ROUnaryStruct(_LSM6DS_STEP_COUNTER, "<h")
     """The number of steps detected by the pedometer. You must enable with `pedometer_enable`
     before calling. Use ``pedometer_reset`` to reset the number of steps"""
 
@@ -232,6 +228,7 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
             ucf: str = None
     ) -> None:
         
+        
         self._cached_accel_range = None
         self._cached_gyro_range = None
 
@@ -242,16 +239,18 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
             raise RuntimeError(
                 "Failed to find %s - check your wiring!" % self.__class__.__name__
             )
-        self.reset()
         if not hasattr(GyroRange, "string"):
             self._add_gyro_ranges()
-        self._bdu = True
-
+        
+        self.reset()
+        self._bdu = False
+        self._boot = True
         self._add_accel_ranges()
         self.accelerometer_data_rate = Rate.RATE_120_HZ  # pylint: disable=no-member
         self.gyro_data_rate = Rate.RATE_120_HZ  # pylint: disable=no-member
+        
 
-        self.accelerometer_range = AccelRange.RANGE_4G  # pylint: disable=no-member
+        self.accelerometer_range = AccelRange.RANGE_2G  # pylint: disable=no-member
         self.gyro_range = GyroRange.RANGE_2000_DPS  # pylint: disable=no-member
         
         # print("Setting Gyro")
@@ -351,7 +350,6 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
     def _set_gyro_range(self, value: int) -> None:
         if not GyroRange.is_valid(value):
             raise AttributeError("range must be a `GyroRange`")
-
         # range uses `FS_G` enum
         if value <= GyroRange.RANGE_2000_DPS:  # pylint: disable=no-member
             self._gyro_range_125dps = False
@@ -361,6 +359,7 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
             self._gyro_range_125dps = True
 
         self._cached_gyro_range = value  # needed to let new range settle
+
 
     @property
     def accelerometer_data_rate(self) -> int:
@@ -382,9 +381,9 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
 
     @gyro_data_rate.setter
     def gyro_data_rate(self, value: int) -> None:
+        
         if not Rate.is_valid(value):
             raise AttributeError("gyro_data_rate must be a `Rate`")
-
         self._gyro_data_rate = value
         # sleep(.2) # needed to let new range settle
 
