@@ -118,7 +118,6 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     _fifo_data_out_tag = ROBits(5, _LSM6DSV16X_FIFO_DATA_OUT_TAG, 3)
     _raw_sensor_fusion_data = Struct(_LSM6DSV16X_FIFO_DATA_OUT_X_L, "<hhh")
     _sflp_en = RWBit(_LSM6DS_EMB_FUNC_EN_A, 1)
-    print(type(_sflp_en))
 
     SAMPLES_BITMASK = 0b0000000111111111
     WTM_BITMASK = 0b1000000000000000
@@ -139,6 +138,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
         print(type(self._sflp_en))
         if sensor_fusion:
             self._enable_sflp()
+
 
     def _print_and_set(self, reg, value, human_name = None):
         # print(type(reg))
@@ -180,21 +180,67 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
         bdr = bool(raw_status & self.BDR_BITMASK)
         ovr_latch = bool(raw_status & self.OVR_LATCHED_BITMASK)
         return FIFOStatus(samples, wtm, ovr, full, bdr, ovr_latch)
-    
+
     @property
     def mem_bank(self) -> int:
         return self._mem_bank
-    
+
     @mem_bank.setter
     def mem_bank(self, value: int) -> None:
         self._mem_bank = value
-        
+
     @property
     def sflp_data_rate(self) -> int:
-        return self.slfp_data_rate
-    
+        return self._sflp_data_rate
+
     @sflp_data_rate.setter
     def sflp_data_rate(self, value: int) -> None:
         self._sflp_data_rate = value
 
-    
+    @property
+    def sflp_batch(self) -> bool:
+        return self._sflp_batch
+
+    @sflp_batch.setter
+    def sflp_batch(self, value: bool) -> None:
+        self._sflp_batch = value
+
+    @property
+    def fifo_mode(self) -> int:
+        return self._fifo_mode
+
+    @fifo_mode.setter
+    def fifo_mode(self, value: int) -> None:
+        self._fifo_mode = value
+
+    @property
+    def sflp_init(self) -> bool:
+        return self._sflp_init
+
+    @sflp_init.setter
+    def sflp_init(self, value: bool) -> None:
+        self._sflp_init = value
+
+    @property
+    def fifo_status1(self) -> int:
+        return self._fifo_status1
+
+    @property
+    def fifo_data_out_tag(self) -> int:
+        return self._fifo_data_out_tag
+
+    @property
+    def raw_sensor_fusion_data(self) -> tuple:
+        return self._raw_sensor_fusion_data
+
+    @raw_sensor_fusion_data.setter
+    def raw_sensor_fusion_data(self, value: tuple) -> None:
+        self._raw_sensor_fusion_data = value
+
+    @property
+    def sflp_en(self) -> bool:
+        return self._sflp_en
+
+    @sflp_en.setter
+    def sflp_en(self, value: bool) -> None:
+        self._sflp_en = value
