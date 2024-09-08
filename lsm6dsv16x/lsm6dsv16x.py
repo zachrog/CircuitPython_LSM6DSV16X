@@ -123,7 +123,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     _fifo_status1 = ROBits(16, _LSM6DSV16X_FIFO_STATUS1, 0, 2)
 
     _fifo_data_out_tag = ROBits(5, _LSM6DSV16X_FIFO_DATA_OUT_TAG, 3)
-    _raw_sensor_fusion_data = Struct(_LSM6DSV16X_FIFO_DATA_OUT_X_L, "<hhh")
+    _raw_sensor_fusion_data = Struct(_LSM6DSV16X_FIFO_DATA_OUT_X_L, "<eee")
     _fifo_watermark = RWBits(8, _LSM6DSV16X_FIFO_CTRL1, 0)
 
     _sflp_en = RWBit(_LSM6DS_EMB_FUNC_EN_A, 1)
