@@ -140,7 +140,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
             i2c_bus: I2C,
             address: int = LSM6DS_DEFAULT_ADDRESS,
             ucf: str = None,
-            sensor_fusion: bool = True
+            sensor_fusion: bool = False
     ) -> None:
         super().__init__(i2c_bus, address, ucf)
         if sensor_fusion:
@@ -151,9 +151,6 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
         self.sflp_data_rate = SFLPRate.RATE_480_HZ  # Set rate 0x5e
         self.fifo_mode = FIFOMode.LSM6DSV16X_CONTINUOUS_MODE
         self.sflp_en = True
-
-    def _reinit_sflp(self):
-        self.sflp_init = True
 
     @property
     def quaternion(self):
@@ -311,7 +308,9 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
 
     @sflp_g_bias_batch.setter
     def sflp_g_bias_batch(self, value: bool) -> None:
+        self.mem_bank = 1
         self._sflp_gbias_batch = value
+        self.mem_bank = 0
 
     @property
     def sflp_gravity_vec_batch(self) -> bool:
@@ -319,8 +318,6 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
 
     @sflp_gravity_vec_batch.setter
     def sflp_gravity_vec_batch(self, value: bool) -> None:
+        self.mem_bank = 1
         self._sflp_gravity_vec_batch = value
-
-
-
-
+        self.mem_bank = 0
