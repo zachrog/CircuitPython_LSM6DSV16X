@@ -1,90 +1,52 @@
-Introduction
-============
+========================
+CircuitPython LSM6DSV16X
+========================
 
-.. image:: https://readthedocs.org/projects/adafruit-circuitpython-lsm6dsox/badge/?version=latest
-    :target: https://docs.circuitpython.org/projects/lsm6dsox/en/latest/
-    :alt: Documentation Status
+This fork was created to implement the LSM6DSV16X 6DoF IMU from STM. It implements acceleration and gyro data, as well as sensor fusion between the two. PRs to implement the remaining features are welcome. 
 
-.. image:: https://raw.githubusercontent.com/adafruit/Adafruit_CircuitPython_Bundle/main/badges/adafruit_discord.svg
-    :target: https://adafru.it/discord
-    :alt: Discord
+**Backwards compatability with other LSM6DS family sensors implemented in the original Adafruit library has not been tested, and is likely broken.**
 
+The LSM6DSV16X is not currently an Adafruit product. 
 
-.. image:: https://github.com/adafruit/Adafruit_CircuitPython_LSM6DS/workflows/Build%20CI/badge.svg
-    :target: https://github.com/adafruit/Adafruit_CircuitPython_LSM6DS/actions
-    :alt: Build Status
+Installation
+===========
+Using :code:`pip3 install adafruit-circuitpython-lsm6ds` will install the original Adafruit library, and which currently does *not* support the LSM6DSV16X. You must clone this repo as a submodule into your project.
 
-.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
-    :target: https://github.com/psf/black
-    :alt: Code Style: Black
+.. code-block::
 
-CircuitPython helper library for the LSM6DS family of motion sensors from ST
+    git submodule add https://github.com/SpaceBarrr/Adafruit_CircuitPython_LSM6DS
+    git submodule update --init
 
-
-Dependencies
-=============
-This driver depends on:
+Dependencies are the same as the original Adafruit library. This driver depends on:
 
 * `Adafruit CircuitPython <https://github.com/adafruit/circuitpython>`_
 * `Bus Device <https://github.com/adafruit/Adafruit_CircuitPython_BusDevice>`_
 * `Register <https://github.com/adafruit/Adafruit_CircuitPython_Register>`_
 
-Please ensure all dependencies are available on the CircuitPython filesystem.
-This is easily achieved by downloading
-`the Adafruit library and driver bundle <https://circuitpython.org/libraries>`_.
 
-Installing from PyPI
-=====================
+Usage
+=====
+By default, sensor fusion is enabled. You can access the fused data through the :code:`quaternion` property. 
 
-On supported GNU/Linux systems like the Raspberry Pi, you can install the driver locally `from
-PyPI <https://pypi.org/project/adafruit-circuitpython-lsm6ds/>`_. To install for current user:
-
-.. code-block:: shell
-
-    pip3 install adafruit-circuitpython-lsm6ds
-
-To install system-wide (this may be required in some cases):
-
-.. code-block:: shell
-
-    sudo pip3 install adafruit-circuitpython-lsm6ds
-
-To install in a virtual environment in your current project:
-
-.. code-block:: shell
-
-    mkdir project-name && cd project-name
-    python3 -m venv .venv
-    source .venv/bin/activate
-    pip3 install adafruit-circuitpython-lsm6ds
-
-Usage Example
-=============
 .. code-block:: python3
 
     import time
     import board
-    from adafruit_lsm6ds.lsm6dsox import LSM6DSOX
-
+    
+    from lsm6dsv16x import LSM6DSV16X
+    
     i2c = board.I2C()  # uses board.SCL and board.SDA
-    sox = LSM6DSOX(i2c)
-
+    sensor = LSM6DSV16X(i2c)
+    
     while True:
-        print("Acceleration: X:%.2f, Y: %.2f, Z: %.2f m/s^2"%(sox.acceleration))
-        print("Gyro X:%.2f, Y: %.2f, Z: %.2f radians/s"%(sox.gyro))
-        print("")
+        print("Acceleration: X:%.2f, Y: %.2f, Z: %.2f m/s^2" % (sensor.acceleration))
+        print("Gyro X:%.2f, Y: %.2f, Z: %.2f radians/s" % (sensor.gyro))
+        print(f"Temp: {sensor.temperature}")
+        print(f"Quaternion: {sensor.quaternion}")
         time.sleep(0.5)
 
 Documentation
 =============
+API documentation for the original library can be found on `Read the Docs <https://docs.circuitpython.org/projects/lsm6dsox/en/latest/>`_.
 
-API documentation for this library can be found on `Read the Docs <https://docs.circuitpython.org/projects/lsm6dsox/en/latest/>`_.
-
-For information on building library documentation, please check out `this guide <https://learn.adafruit.com/creating-and-sharing-a-circuitpython-library/sharing-our-docs-on-readthedocs#sphinx-5-1>`_.
-
-Contributing
-============
-
-Contributions are welcome! Please read our `Code of Conduct
-<https://github.com/adafruit/Adafruit_CircuitPython_LSM6DS/blob/main/CODE_OF_CONDUCT.md>`_
-before contributing to help this project stay welcoming.
+Additional features were implemented based off the `LSM6DSV16X datasheet <https://www.st.com/resource/en/datasheet/lsm6dsv16x.pdf>`_ and the `example C code repository <https://github.com/STMicroelectronics/STMems_Standard_C_drivers/blob/master/lsm6dsv16x_STdC/examples/lsm6dsv16x_sensor_fusion.c>`_.
