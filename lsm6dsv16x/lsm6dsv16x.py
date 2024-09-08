@@ -60,13 +60,13 @@ SFLPRate.add_values(
 
 FIFOMode.add_values(
     (
-        ("LSM6DSV16X_BYPASS_MODE", 0, 0, None),
-        ("LSM6DSV16X_FIFO_MODE", 1, 1, None),
-        ("LSM6DSV16X_CONTINUOUS_WTM_TO_FULL_MODE", 2, 2, None),
-        ("LSM6DSV16X_CONTINUOUS_TO_FIFO_MODE", 3, 3, None),
-        ("LSM6DSV16X_BYPASS_TO_CONTINUOUS_MODE", 4, 4, None),
-        ("LSM6DSV16X_CONTINUOUS_MODE", 6, 6, None),  # skip 5 (reserved)
-        ("LSM6DSV16X_BYPASS_TO_FIFO_MODE", 7, 7, None),
+        ("BYPASS_MODE", 0, 0, None),
+        ("FIFO_MODE", 1, 1, None),
+        ("CONTINUOUS_WTM_TO_FULL_MODE", 2, 2, None),
+        ("CONTINUOUS_TO_FIFO_MODE", 3, 3, None),
+        ("BYPASS_TO_CONTINUOUS_MODE", 4, 4, None),
+        ("CONTINUOUS_MODE", 6, 6, None),  # skip 5 (reserved)
+        ("BYPASS_TO_FIFO_MODE", 7, 7, None),
     )
 )
 
@@ -140,7 +140,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
             i2c_bus: I2C,
             address: int = LSM6DS_DEFAULT_ADDRESS,
             ucf: str = None,
-            sensor_fusion: bool = False
+            sensor_fusion: bool = True
     ) -> None:
         super().__init__(i2c_bus, address, ucf)
         if sensor_fusion:
@@ -149,7 +149,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
 
     def enable_sflp(self):
         self.sflp_data_rate = SFLPRate.RATE_480_HZ  # Set rate 0x5e
-        self.fifo_mode = FIFOMode.LSM6DSV16X_CONTINUOUS_MODE
+        self.fifo_mode = FIFOMode.CONTINUOUS_MODE
         self.sflp_en = True
 
     @property
@@ -175,7 +175,6 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
                 if fifo_tag == tag:  # Check for quaternion tag
                     return data
         return None
-
 
     def read_status(self):
         raw_status = self.fifo_status1
