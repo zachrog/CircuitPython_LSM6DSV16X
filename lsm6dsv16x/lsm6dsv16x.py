@@ -113,7 +113,9 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
 
     CHIP_ID = LSM6DSV16X_CHIP_ID
     _sflp_data_rate = RWBits(3, _LSM6DSV16X_SFLP_ODR, 3)
-    _sflp_batch = RWBit(_LSM6DSV16X_EMB_FUNC_FIFO_EN_A, 1)
+    _sflp_game_vec_batch = RWBit(_LSM6DSV16X_EMB_FUNC_FIFO_EN_A, 1)
+    _sflp_gbias_batch = RWBit(_LSM6DSV16X_EMB_FUNC_FIFO_EN_A, 5)
+    _sflp_gravity_vec_batch = RWBit(_LSM6DSV16X_EMB_FUNC_FIFO_EN_A, 4)
     _acc_batch = RWBits(4, _LSM6DSV16X_FIFO_CTRL3, 0)
     _fifo_mode = RWBits(3, _LSM6DSV16X_FIFO_CTRL4, 0)
 
@@ -142,31 +144,43 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     ) -> None:
         super().__init__(i2c_bus, address, ucf)
         if sensor_fusion:
-            self._enable_sflp()
+            self.enable_sflp()
         self._print_regs()
 
-    def _enable_sflp(self):
-        print()
+    def enable_sflp(self):
         self.sflp_data_rate = SFLPRate.RATE_480_HZ  # Set rate 0x5e
-        self.sflp_batch = 1  # Set batching 0x44
         self.fifo_mode = FIFOMode.LSM6DSV16X_CONTINUOUS_MODE
-        self.sflp_en = 1
+        self.sflp_en = True
+
+    def _reinit_sflp(self):
+        self.sflp_init = True
 
     @property
     def quaternion(self):
-        status = self._read_status()
+        return self._fifo_wait_and_get(0x13)
+
+    @property
+    def gbias(self):
+        return self._fifo_wait_and_get(0x16)
+
+    @property
+    def gravity_vec(self):
+        return self._fifo_wait_and_get(0x17)
+
+    def _fifo_wait_and_get(self, tag):
+        status = self.read_status()
         num_samples = status.samples
         if num_samples > 0:
             while True:
                 # Grab data from FIFO, this also pops it.
-                tag = self.fifo_data_out_tag
+                fifo_tag = self.fifo_data_out_tag
                 data = self.raw_sensor_fusion_data
-                if tag == 0x13:  # Check for quaternion tag
+                if fifo_tag == tag:  # Check for quaternion tag
                     return data
-
         return None
 
-    def _read_status(self):
+
+    def read_status(self):
         raw_status = self.fifo_status1
         samples = raw_status & self.SAMPLES_BITMASK
         wtm = bool(raw_status & self.WTM_BITMASK)
@@ -179,7 +193,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     def _print_regs(self):
         print("Current registers:")
         print(f"data_rate: {bin(self.sflp_data_rate)}")
-        print(f"batch: {bin(self.sflp_batch)}")
+        print(f"batch: {bin(self.sflp_game_vec_batch)}")
         print(f"fifo mode: {bin(self.fifo_mode)}")
         print(f"sflp en: {bin(self.sflp_en)}")
         print(f"sflp init: {bin(self.sflp_init)}")
@@ -213,16 +227,16 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
         self.mem_bank = 0
 
     @property
-    def sflp_batch(self) -> bool:
+    def sflp_game_vec_batch(self) -> bool:
         self.mem_bank = 1
-        ret = self._sflp_batch
+        ret = self._sflp_game_vec_batch
         self.mem_bank = 0
         return ret
 
-    @sflp_batch.setter
-    def sflp_batch(self, value: bool) -> None:
+    @sflp_game_vec_batch.setter
+    def sflp_game_vec_batch(self, value: bool) -> None:
         self.mem_bank = 1
-        self._sflp_batch = value
+        self._sflp_game_vec_batch = value
         self.mem_bank = 0
 
     @property
@@ -290,3 +304,23 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     @acc_batch.setter
     def acc_batch(self, value: int) -> None:
         self._acc_batch = value
+
+    @property
+    def sflp_g_bias_batch(self) -> bool:
+        return self._sflp_gbias_batch
+
+    @sflp_g_bias_batch.setter
+    def sflp_g_bias_batch(self, value: bool) -> None:
+        self._sflp_gbias_batch = value
+
+    @property
+    def sflp_gravity_vec_batch(self) -> bool:
+        return self._sflp_gravity_vec_batch
+
+    @sflp_gravity_vec_batch.setter
+    def sflp_gravity_vec_batch(self, value: bool) -> None:
+        self._sflp_gravity_vec_batch = value
+
+
+
+
