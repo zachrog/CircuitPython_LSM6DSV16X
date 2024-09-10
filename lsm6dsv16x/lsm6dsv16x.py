@@ -187,7 +187,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
 
     @property
     def quaternion(self):
-        return self._fifo_wait_and_get(0x13)
+        return self._process_quaternion(self._fifo_wait_and_get(0x13))
 
     @property
     def gbias(self):
@@ -207,7 +207,9 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
                 # Grab data from FIFO, this also pops it.
                 fifo_tag = self.fifo_data_out_tag
                 data = self.raw_sensor_fusion_data
-                if fifo_tag in self._fifo_data_tags:  # Check for quaternion tag
+                if fifo_tag in self._fifo_data_tags:
+                    if fifo_tag == LSM6DSV16XDataTags.SFLP_game_rotation_vector:
+                        self._process_quaternion(data)
                     ret[LSM6DSV16XDataTags(fifo_tag).name] = data
             return ret
         return None
@@ -374,3 +376,8 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
 
     def _adjust_data_tag(self, tag, value):
         self._fifo_data_tags.append(tag) if value else self._fifo_data_tags.remove(tag)
+
+    @staticmethod
+    def _process_quaternion(quaternion):
+        # TODO: Implement quaternion get (Convert 3 quaternion parameters to the fourth angle parameter)
+        return quaternion

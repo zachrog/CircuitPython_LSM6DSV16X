@@ -20,7 +20,7 @@ while True:
     sensor.gyro_data_rate = Rate.RATE_12_5_HZ
     for i in range(100):
         print(
-            "(%.2f, %.2f, %.2f, %.2f, %.2f, %.2f" % (sensor.acceleration + sensor.gyro)
+            "(%.2f, %.2f, %.2f, %.2f, %.2f, %.2f" % (sensor.accelerometer + sensor.gyroscope)
         )
     print()
 
@@ -28,7 +28,7 @@ while True:
     sensor.gyro_data_rate = Rate.RATE_52_HZ
     for i in range(100):
         print(
-            "(%.2f, %.2f, %.2f, %.2f, %.2f, %.2f" % (sensor.acceleration + sensor.gyro)
+            "(%.2f, %.2f, %.2f, %.2f, %.2f, %.2f" % (sensor.accelerometer + sensor.gyroscope)
         )
     print()
 
@@ -36,6 +36,6 @@ while True:
     sensor.gyro_data_rate = Rate.RATE_416_HZ
     for i in range(100):
         print(
-            "(%.2f, %.2f, %.2f, %.2f, %.2f, %.2f" % (sensor.acceleration + sensor.gyro)
+            "(%.2f, %.2f, %.2f, %.2f, %.2f, %.2f" % (sensor.accelerometer + sensor.gyroscope)
         )
     print()

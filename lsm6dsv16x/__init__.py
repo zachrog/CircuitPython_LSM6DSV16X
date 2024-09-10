@@ -289,7 +289,7 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
         )
 
     @property
-    def acceleration(self) -> Tuple[float, float, float]:
+    def accelerometer(self) -> Tuple[float, float, float]:
         """The x, y, z acceleration values returned in a 3-tuple and are in m / s ^ 2."""
         raw_accel_data = self._raw_accel_data
         x = self._scale_xl_data(raw_accel_data[0])
@@ -299,7 +299,7 @@ class LSM6DS:  # pylint: disable=too-many-instance-attributes
         return (x, y, z)
 
     @property
-    def gyro(self) -> Tuple[float, float, float]:
+    def gyroscope(self) -> Tuple[float, float, float]:
         """The x, y, z angular velocity values returned in a 3-tuple and are in radians / second"""
         raw_gyro_data = self._raw_gyro_data
         x, y, z = [radians(self._scale_gyro_data(i)) for i in raw_gyro_data]

@@ -18,7 +18,7 @@ imu_i2c = busio.I2C(board.IMU_SCL, board.IMU_SDA)
 sensor = LSM6DS3TRC(imu_i2c)
 
 while True:
-    print("Acceleration: X:%.2f, Y: %.2f, Z: %.2f m/s^2" % (sensor.acceleration))
-    print("Gyro X:%.2f, Y: %.2f, Z: %.2f radians/s" % (sensor.gyro))
+    print("Acceleration: X:%.2f, Y: %.2f, Z: %.2f m/s^2" % (sensor.accelerometer))
+    print("Gyro X:%.2f, Y: %.2f, Z: %.2f radians/s" % (sensor.gyroscope))
     print("")
     time.sleep(0.5)
