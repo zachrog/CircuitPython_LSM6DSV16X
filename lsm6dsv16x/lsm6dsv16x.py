@@ -199,7 +199,12 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
 
     @property
     def fifo_batch_data(self):
-        status = self.read_status()
+        """
+        Gets all the data enabled in batching, this will wait until at least one of each value has been obtained. 
+        If you just want one value, use dedicated parameter instead.
+        :return: Dictionary 
+        """
+        status = self.fifo_status
         num_samples = status.samples
         if num_samples > 0:
             ret = {}
@@ -214,11 +219,17 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
             return ret
         return None
 
-    def _fifo_wait_and_get(self, tag):
-        status = self.read_status()
+    def _fifo_wait_and_get(self, tag, timeout=1):
+        """
+        Wait and get data from fifo based of tag. This will erase all data in the FIFO up until the data required.
+        :param tag: FIFO data tag as specified in LSM6DSV16XDataTags enum.
+        :return: data in FIFO, None if samples is 0 or timeout hit.
+        """
+        status = self.fifo_status
         num_samples = status.samples
+        time_start = time.time()
         if num_samples > 0:
-            while True:
+            while time.time() - time_start < timeout:
                 # Grab data from FIFO, this also pops it.
                 fifo_tag = self.fifo_data_out_tag
                 data = self.raw_sensor_fusion_data
@@ -226,8 +237,13 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
                     return data
         return None
 
-    def read_status(self):
-        raw_status = self.fifo_status1
+    @property
+    def fifo_status(self):
+        """
+        Processes FIFO status message.
+        :return: FIFOStatus dataclass
+        """
+        raw_status = self.raw_fifo_status
         samples = raw_status & self.SAMPLES_BITMASK
         wtm = bool(raw_status & self.WTM_BITMASK)
         ovr = bool(raw_status & self.OVR_BITMASK)
@@ -308,7 +324,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
         self.mem_bank = 0
 
     @property
-    def fifo_status1(self) -> int:
+    def raw_fifo_status(self) -> int:
         return self._fifo_status1
 
     @property
