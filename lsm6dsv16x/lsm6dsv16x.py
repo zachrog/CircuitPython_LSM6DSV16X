@@ -12,6 +12,7 @@ from adafruit_register.i2c_bits import RWBits, ROBits
 from adafruit_register.i2c_bit import RWBit, ROBit
 from micropython import const
 from dataclasses import dataclass
+from enum import IntEnum
 import time
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
@@ -76,6 +77,36 @@ try:
 except ImportError:
     pass
 
+
+class LSM6DSV16XDataTags(IntEnum):
+    FIFO_empty = 0x00
+    Gyroscope_NC = 0x01
+    Accelerometer_NC = 0x02
+    Temperature = 0x03
+    Timestamp = 0x04
+    CFG_Change = 0x05
+    Accelerometer_NC_T_2 = 0x06
+    Accelerometer_NC_T_1 = 0x07
+    Accelerometer_2xC = 0x08
+    Accelerometer_3xC = 0x09
+    Gyroscope_NC_T_2 = 0x0A
+    Gyroscope_NC_T_1 = 0x0B
+    Gyroscope_2xC = 0x0C
+    Gyroscope_3xC = 0x0D
+    Sensor_hub_slave_0 = 0x0E
+    Sensor_hub_slave_1 = 0x0F
+    Sensor_hub_slave_2 = 0x10
+    Sensor_hub_slave_3 = 0x11
+    Step_counter = 0x12
+    SFLP_game_rotation_vector = 0x13
+    SFLP_gyroscope_bias = 0x16
+    SFLP_gravity_vector = 0x17
+    Sensor_hub_nack = 0x19
+    MLC_result = 0x1A
+    MLC_filter = 0x1B
+    MLC_feature = 0x1C
+    Accelerometer_dualC = 0x1D
+    Enhanced_EIS_gyroscope = 0x1E
 
 class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
 
@@ -147,6 +178,8 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
             self.enable_sflp()
         self._print_regs()
 
+        self._fifo_data_tags = []
+
     def enable_sflp(self):
         self.sflp_data_rate = SFLPRate.RATE_480_HZ  # Set rate 0x5e
         self.fifo_mode = FIFOMode.CONTINUOUS_MODE
@@ -163,6 +196,21 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     @property
     def gravity_vec(self):
         return self._fifo_wait_and_get(0x17)
+
+    @property
+    def fifo_batch_data(self):
+        status = self.read_status()
+        num_samples = status.samples
+        if num_samples > 0:
+            ret = {}
+            while len(ret.keys()) < len(self._fifo_data_tags):
+                # Grab data from FIFO, this also pops it.
+                fifo_tag = self.fifo_data_out_tag
+                data = self.raw_sensor_fusion_data
+                if fifo_tag in self._fifo_data_tags:  # Check for quaternion tag
+                    ret[LSM6DSV16XDataTags(fifo_tag).name] = data
+            return ret
+        return None
 
     def _fifo_wait_and_get(self, tag):
         status = self.read_status()
@@ -234,6 +282,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
         self.mem_bank = 1
         self._sflp_game_vec_batch = value
         self.mem_bank = 0
+        self._adjust_data_tag(LSM6DSV16XDataTags.SFLP_game_rotation_vector, value)
 
     @property
     def fifo_mode(self) -> int:
@@ -310,6 +359,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
         self.mem_bank = 1
         self._sflp_gbias_batch = value
         self.mem_bank = 0
+        self._adjust_data_tag(LSM6DSV16XDataTags.SFLP_gyroscope_bias, value)
 
     @property
     def sflp_gravity_vec_batch(self) -> bool:
@@ -320,3 +370,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
         self.mem_bank = 1
         self._sflp_gravity_vec_batch = value
         self.mem_bank = 0
+        self._adjust_data_tag(LSM6DSV16XDataTags.SFLP_gravity_vector, value)
+
+    def _adjust_data_tag(self, tag, value):
+        self._fifo_data_tags.append(tag) if value else self._fifo_data_tags.remove(tag)
