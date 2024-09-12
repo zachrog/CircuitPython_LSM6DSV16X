@@ -396,7 +396,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def _process_quaternion(quaternion):
-        sumsq = np.sum(quaternion**2)
+        sumsq = np.sum(np.array(quaternion)**2)
 
         if sumsq > 1:
             n = np.sqrt(sumsq)
@@ -405,6 +405,6 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
             quaternion[2] /= n
             sumsq = 1
 
-        quaternion.append(np.sqrt(1 - sumsq))
+        quaternion = np.insert(quaternion, 0, np.sqrt(1 - sumsq))
 
         return quaternion
