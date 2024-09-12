@@ -14,6 +14,7 @@ from micropython import const
 from dataclasses import dataclass
 from enum import IntEnum
 import time
+import numpy as np
 
 sys.path.insert(0, os.path.dirname(os.path.realpath(__file__)))
 from __init__ import LSM6DS, CV, _LSM6DS_EMB_FUNC_INIT_A, LSM6DS_DEFAULT_ADDRESS, _LSM6DS_EMB_FUNC_EN_A, _LSM6DS_CTRL3_C
@@ -200,9 +201,9 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
     @property
     def fifo_batch_data(self):
         """
-        Gets all the data enabled in batching, this will wait until at least one of each value has been obtained. 
+        Gets all the data enabled in batching, this will wait until at least one of each value has been obtained.
         If you just want one value, use dedicated parameter instead.
-        :return: Dictionary 
+        :return: Dictionary
         """
         status = self.fifo_status
         num_samples = status.samples
@@ -395,5 +396,15 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def _process_quaternion(quaternion):
-        # TODO: Implement quaternion get (Convert 3 quaternion parameters to the fourth angle parameter)
+        sumsq = np.sum(quaternion**2)
+
+        if sumsq > 1:
+            n = np.sqrt(sumsq)
+            quaternion[0] /= n
+            quaternion[1] /= n
+            quaternion[2] /= n
+            sumsq = 1
+
+        quaternion.append(np.sqrt(1 - sumsq))
+
         return quaternion
