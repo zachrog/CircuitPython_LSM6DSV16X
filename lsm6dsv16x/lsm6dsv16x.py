@@ -215,7 +215,7 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
                 data = self.raw_sensor_fusion_data
                 if fifo_tag in self._fifo_data_tags:
                     if fifo_tag == LSM6DSV16XDataTags.SFLP_game_rotation_vector:
-                        self._process_quaternion(data)
+                        data = self._process_quaternion(data)
                     ret[LSM6DSV16XDataTags(fifo_tag).name] = data
             return ret
         return None
@@ -396,15 +396,15 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
 
     @staticmethod
     def _process_quaternion(quaternion):
-        sumsq = np.sum(np.array(quaternion)**2)
-
+        quaternion = np.array(quaternion)
+        sumsq = np.sum(quaternion**2)
+        
         if sumsq > 1:
             n = np.sqrt(sumsq)
             quaternion[0] /= n
             quaternion[1] /= n
             quaternion[2] /= n
             sumsq = 1
-
         quaternion = np.insert(quaternion, 0, np.sqrt(1 - sumsq))
-
+        print(quaternion)
         return quaternion
