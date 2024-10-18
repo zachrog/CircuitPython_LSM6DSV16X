@@ -406,5 +406,5 @@ class LSM6DSV16X(LSM6DS):  # pylint: disable=too-many-instance-attributes
             quaternion[2] /= n
             sumsq = 1
         quaternion = np.insert(quaternion, 0, np.sqrt(1 - sumsq))
-        print(quaternion)
+        # print(quaternion)
         return quaternion
