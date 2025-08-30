@@ -1,4 +1,4 @@
-3# SPDX-FileCopyrightText: Copyright (c) 2020 Bryan Siepert for Adafruit Industries
+# SPDX-FileCopyrightText: Copyright (c) 2020 Bryan Siepert for Adafruit Industries
 # Modified for Dingo V2
 # SPDX-License-Identifier: MIT
 
@@ -64,6 +64,8 @@ from adafruit_bus_device import i2c_device
 from adafruit_register.i2c_struct import ROUnaryStruct, Struct
 from adafruit_register.i2c_bits import RWBits
 from adafruit_register.i2c_bit import RWBit, ROBit
+
+import lsm6dsv16x
 
 try:
     from typing import Tuple, Optional
